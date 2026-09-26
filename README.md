@@ -7,7 +7,7 @@ Kumpulan skill kustom untuk **Hermes Agent**. Tiap folder di root repo ini adala
 | Skill | Fungsi |
 |-------|--------|
 | [`anti-ai-slop`](./anti-ai-slop) | Filter gaya agar teks & UI tidak terbaca "AI-generated". Doktrin tulisan + UI, daftar kata/frasa terlarang, tell bahasa Indonesia, 38 aturan UI, sistem warna OKLCH, tipografi, scoring anti-slop. |
-| [`pentest-playbook`](./pentest-playbook) | Metodologi pentest **authorized-only**: 7 fase (passive recon → evidence report), gate otorisasi wajib, pivot triggers, laporan evidence-first. Bukan payload/eksploit — panduan alur & routing. |
+| [`pentest-playbook`](./pentest-playbook) | Metodologi pentest **authorized-only**: 7 fase (passive recon → evidence report), gate otorisasi wajib, pivot triggers, laporan evidence-first. Referensi per-domain (web/API/cloud), tool map Kali per fase, dan template laporan. Bukan payload/eksploit — panduan alur & routing. |
 
 ## Cara pasang ke Hermes Agent lain
 
@@ -40,7 +40,14 @@ awgjaya-skills/
 │       ├── ui-rules.md
 │       └── ui-deep.md
 └── pentest-playbook/
-    └── SKILL.md
+    ├── SKILL.md
+    ├── references/
+    │   ├── web-app.md
+    │   ├── api.md
+    │   ├── cloud.md
+    │   └── tooling.md
+    └── templates/
+        └── report.md
 ```
 
 ## Lisensi & sumber
