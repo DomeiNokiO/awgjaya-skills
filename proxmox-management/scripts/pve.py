@@ -27,9 +27,40 @@ Contoh:
 """
 import argparse
 import os
+import re
 import sys
 import time
 import urllib.parse
+
+# --- Validasi input (cegah path/parameter injection ke API Proxmox) ---
+_VMID_RE = re.compile(r"^\d+$")
+_SNAP_RE = re.compile(r"^[A-Za-z][\w-]{0,39}$")
+_DISK_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
+_NODE_RE = re.compile(r"^[A-Za-z0-9._-]{1,63}$")
+
+
+def _vmid(x):
+    if not _VMID_RE.match(str(x)):
+        sys.exit(f"VMID tidak valid: {x!r} (harus angka)")
+    return str(x)
+
+
+def _snap(x):
+    if not _SNAP_RE.match(str(x)):
+        sys.exit(f"Nama snapshot tidak valid: {x!r} (huruf awal, [A-Za-z0-9_-], maks 40)")
+    return str(x)
+
+
+def _disk(x):
+    if not _DISK_RE.match(str(x)):
+        sys.exit(f"Nama disk tidak valid: {x!r}")
+    return str(x)
+
+
+def _node(x):
+    if not _NODE_RE.match(str(x)):
+        sys.exit(f"Nama node tidak valid: {x!r}")
+    return str(x)
 
 try:
     import requests
@@ -54,7 +85,7 @@ class PVE:
     def _req(self, method, path, **kw):
         r = self.s.request(method, self.base + path, timeout=30, **kw)
         if r.status_code >= 400:
-            sys.exit(f"HTTP {r.status_code} {method} {path}: {r.text}")
+            sys.exit(f"HTTP {r.status_code} {method} {path}: {r.text[:300]}")
         return r.json().get("data")
 
     def get(self, path):
@@ -139,7 +170,7 @@ def main():
 
     args = p.parse_args()
     pve = PVE()
-    node = args.node or pve.node
+    node = _node(args.node or pve.node)
 
     if args.cmd == "nodes":
         for n in pve.get("/nodes"):
@@ -151,25 +182,29 @@ def main():
                 print(f"{v['vmid']:<6} {t:<5} {v.get('name',v.get('hostname','')):<24} {v.get('status','?')}")
 
     elif args.cmd in ("status", "config"):
-        t = vmtype(pve, node, args.vmid)
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
         path = "status/current" if args.cmd == "status" else "config"
-        d = pve.get(f"/nodes/{node}/{t}/{args.vmid}/{path}")
+        d = pve.get(f"/nodes/{node}/{t}/{vmid}/{path}")
         for k, v in sorted(d.items()):
             print(f"{k}: {v}")
 
     elif args.cmd in ("start", "stop", "shutdown", "reboot"):
-        t = vmtype(pve, node, args.vmid)
-        upid = pve.post(f"/nodes/{node}/{t}/{args.vmid}/status/{args.cmd}")
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
+        upid = pve.post(f"/nodes/{node}/{t}/{vmid}/status/{args.cmd}")
         pve.wait_task(upid, node)
 
     elif args.cmd == "clone":
-        data = {"newid": args.newid, "name": args.name, "storage": args.storage}
+        template = _vmid(args.template)
+        data = {"newid": _vmid(args.newid), "name": args.name, "storage": args.storage}
         if args.full:
             data["full"] = 1
-        upid = pve.post(f"/nodes/{node}/qemu/{args.template}/clone", data)
+        upid = pve.post(f"/nodes/{node}/qemu/{template}/clone", data)
         pve.wait_task(upid, node)
 
     elif args.cmd == "set-cloudinit":
+        vmid = _vmid(args.vmid)
         data = {"ciuser": args.ciuser, "nameserver": args.nameserver}
         if args.sshkey:
             key = open(os.path.expanduser(args.sshkey)).read()
@@ -179,39 +214,43 @@ def main():
             if args.gw and args.ip != "dhcp":
                 ipc += ",gw=" + args.gw
             data["ipconfig0"] = ipc
-        pve.put(f"/nodes/{node}/qemu/{args.vmid}/config", data)
-        pve.post(f"/nodes/{node}/qemu/{args.vmid}/cloudinit", {})  # regenerate
+        pve.put(f"/nodes/{node}/qemu/{vmid}/config", data)
+        pve.post(f"/nodes/{node}/qemu/{vmid}/cloudinit", {})  # regenerate
         print("cloud-init diperbarui")
 
     elif args.cmd == "resize":
-        t = vmtype(pve, node, args.vmid)
-        pve.put(f"/nodes/{node}/{t}/{args.vmid}/resize", {"disk": args.disk, "size": args.size})
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
+        pve.put(f"/nodes/{node}/{t}/{vmid}/resize", {"disk": _disk(args.disk), "size": args.size})
         print("resize OK")
 
     elif args.cmd == "snapshot":
-        t = vmtype(pve, node, args.vmid)
-        upid = pve.post(f"/nodes/{node}/{t}/{args.vmid}/snapshot",
-                        {"snapname": args.name, "description": args.desc})
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
+        upid = pve.post(f"/nodes/{node}/{t}/{vmid}/snapshot",
+                        {"snapname": _snap(args.name), "description": args.desc})
         pve.wait_task(upid, node)
 
     elif args.cmd == "rollback":
-        t = vmtype(pve, node, args.vmid)
-        upid = pve.post(f"/nodes/{node}/{t}/{args.vmid}/snapshot/{args.name}/rollback")
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
+        upid = pve.post(f"/nodes/{node}/{t}/{vmid}/snapshot/{_snap(args.name)}/rollback")
         pve.wait_task(upid, node)
 
     elif args.cmd == "backup":
         upid = pve.post(f"/nodes/{node}/vzdump",
-                        {"vmid": args.vmid, "storage": args.storage,
+                        {"vmid": _vmid(args.vmid), "storage": args.storage,
                          "mode": args.mode, "compress": "zstd"})
         pve.wait_task(upid, node, timeout=3600)
 
     elif args.cmd == "delete":
-        t = vmtype(pve, node, args.vmid)
-        st = pve.get(f"/nodes/{node}/{t}/{args.vmid}/status/current")
+        vmid = _vmid(args.vmid)
+        t = vmtype(pve, node, vmid)
+        st = pve.get(f"/nodes/{node}/{t}/{vmid}/status/current")
         if st.get("status") == "running":
             print("VM running, stop dulu...")
-            pve.wait_task(pve.post(f"/nodes/{node}/{t}/{args.vmid}/status/stop"), node)
-        path = f"/nodes/{node}/{t}/{args.vmid}"
+            pve.wait_task(pve.post(f"/nodes/{node}/{t}/{vmid}/status/stop"), node)
+        path = f"/nodes/{node}/{t}/{vmid}"
         if args.purge:
             path += "?purge=1"
         upid = pve.delete(path)

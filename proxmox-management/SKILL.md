@@ -34,7 +34,7 @@ Don't use for:
 - **Kredensial (pilih salah satu):**
   - **API Token (DIREKOMENDASIKAN):** `USER@REALM!TOKENID=SECRET`. Tanpa CSRF, tanpa ticket, tidak kedaluwarsa. Buat via `pveum`.
   - **Ticket (password):** `root@pam` + password → dapat `PVEAuthCookie` + `CSRFPreventionToken` (berlaku ~2 jam).
-- **SSL:** Default self-signed. Client harus bypass verifikasi (`verify=False` / `rejectUnauthorized:false`) ATAU pasang CA proper untuk produksi.
+- **SSL:** Default self-signed. Client harus bypass verifikasi (`verify=False` / `rejectUnauthorized:false`) ATAU pasang CA proper untuk produksi. **Peringatan:** `PVE_VERIFY_SSL` default `false` di `pve.py` berarti TANPA verifikasi cert — hanya untuk LAN tepercaya/testing. Di jaringan tak tepercaya set `PVE_VERIFY_SSL=true` + pasang CA (tanpa verifikasi = rentan MITM, token bisa dicuri).
 - **Env vars** (lihat `.env` di reference): `PVE_HOST`, `PVE_NODE`, `PVE_TOKEN_ID`, `PVE_TOKEN_SECRET`.
 
 ### Membuat API Token + role minimal (di node Proxmox)
@@ -57,7 +57,7 @@ Semua aksi terprogram jalankan lewat `terminal`:
 terminal(command="python3 skills/devops/proxmox-management/scripts/pve.py <cmd> ...", timeout=120)
 ```
 
-Helper `scripts/pve.py` (client Python berbasis token, lihat file) menyediakan subcommand: `nodes`, `list`, `status`, `start/stop/shutdown/reboot`, `clone`, `create-lxc`, `set-cloudinit`, `resize`, `snapshot`, `rollback`, `backup`, `restore`, `delete`, `task-wait`. Untuk ad-hoc, gunakan `pvesh` di node via SSH.
+Helper `scripts/pve.py` (client Python berbasis token, lihat file) menyediakan subcommand: `nodes`, `list`, `status`, `config`, `start/stop/shutdown/reboot`, `clone`, `set-cloudinit`, `resize`, `snapshot`, `rollback`, `backup`, `delete`, `task-wait`. Semua argumen `vmid`/`snapshot`/`disk`/`node` divalidasi (regex) & tiap segmen path di-quote sebelum masuk API — cegah path/parameter injection. Untuk ad-hoc, gunakan `pvesh` di node via SSH.
 
 ## Quick Reference (CLI di node Proxmox)
 
