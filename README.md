@@ -8,6 +8,7 @@ Kumpulan skill kustom untuk **Hermes Agent**. Tiap folder di root repo ini adala
 |-------|--------|
 | [`anti-ai-slop`](./anti-ai-slop) | Filter gaya agar teks & UI tidak terbaca "AI-generated". Doktrin tulisan + UI, daftar kata/frasa terlarang, tell bahasa Indonesia, 38 aturan UI, sistem warna OKLCH, tipografi, scoring anti-slop. |
 | [`pentest-playbook`](./pentest-playbook) | Metodologi pentest **authorized-only**: 7 fase (passive recon → evidence report), gate otorisasi wajib, pivot triggers, laporan evidence-first. Referensi per-domain (web/API/cloud), tool map Kali per fase, dan template laporan. Bukan payload/eksploit — panduan alur & routing. |
+| [`vuln-remediation-playbook`](./vuln-remediation-playbook) | Pasangan **defensif** dari pentest-playbook: cara **menambal** tiap kelas kerentanan dari akar (bukan tambal gejala). Alur patch 7 langkah, mapping serang→tambal, referensi per-domain (injection, access/auth, infra, crypto) dengan contoh kode & verifikasi. |
 | [`proxmox-management`](./proxmox-management) | Kelola VM, container (CT/LXC), dan integrasi API Proxmox VE. Buat kebutuhan homelab/hosting Proxmox. |
 | [`secure-laravel-delivery`](./secure-laravel-delivery) | Deliver aplikasi Laravel ke GitHub + host VPS dengan aman: hardening, deploy, env. |
 | [`reddit-reading`](./reddit-reading) | Baca Reddit (subreddit, search, thread, user) via API JSON, tanpa browser. |
@@ -38,27 +39,25 @@ Setelah disalin, skill langsung terbaca oleh agent (auto-load saat trigger-nya c
 awgjaya-skills/
 ├── anti-ai-slop/
 │   ├── SKILL.md
-│   └── references/
-│       ├── writing-banned.md
-│       ├── indonesian-tells.md
-│       ├── ui-rules.md
-│       └── ui-deep.md
-└── pentest-playbook/
-    ├── SKILL.md
-    ├── references/
-    │   ├── web-app.md
-    │   ├── api.md
-    │   ├── cloud.md
-    │   └── tooling.md
-    └── templates/
-        └── report.md
+│   └── references/          # writing-banned, indonesian-tells, ui-rules, ui-deep
+├── pentest-playbook/
+│   ├── SKILL.md
+│   ├── references/          # web-app, api, cloud, tooling
+│   └── templates/           # report.md
+├── vuln-remediation-playbook/
+│   ├── SKILL.md
+│   └── references/          # web-injection, web-access-auth, infra-hardening, crypto-and-misc
+├── proxmox-management/      # SKILL.md + references/ + scripts/pve.py
+├── secure-laravel-delivery/
+├── reddit-reading/
+└── rss-feeds/
 ```
 
 ## Lisensi & sumber
 
 `anti-ai-slop` disaring & dikonsolidasikan dari beberapa repo publik: jalaalrd/anti-ai-slop-writing, dharmawan-id/anti-ai-slop, miqdadbadjuber/anti-slop, Nutlope/hallmark, dtransla-maker/Anti-AI-Design-Slop, prodigeproject/prodigeui. Gunakan sesuai lisensi masing-masing sumber.
 
-`reddit-reading` & `rss-feeds` oleh Teknium/Hermes Agent (MIT). `proxmox-management`, `pentest-playbook`, `secure-laravel-delivery` disusun untuk kebutuhan sendiri (MIT).
+`reddit-reading` & `rss-feeds` oleh Teknium/Hermes Agent (MIT). `proxmox-management`, `pentest-playbook`, `vuln-remediation-playbook`, `secure-laravel-delivery` disusun untuk kebutuhan sendiri (MIT).
 
 ### Tidak disertakan (sengaja)
 
